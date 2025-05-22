@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import axios from 'axios';
 
@@ -13,12 +13,8 @@ interface Client {
   client_id: number;
   first_name: string;
   last_name: string | null;
-  email_address: string;
-  phone_number: string | null;
-  company_name: string | null;
-  company_address: string | null;
-  company_vat_number: string | null;
-  company_website: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 export default function ClientDetailsScreen() {
@@ -28,6 +24,8 @@ export default function ClientDetailsScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<Client>>({});
   const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const inputBackground = useThemeColor({}, 'card');
 
   useEffect(() => {
     fetchClient();
@@ -36,8 +34,9 @@ export default function ClientDetailsScreen() {
   const fetchClient = async () => {
     try {
       const response = await axios.get(`${API_ENDPOINTS.CLIENTS}?id=${id}`);
-      setClient(response.data);
-      setForm(response.data);
+      const data = response.data;
+      setClient(data);
+      setForm(data);
     } catch (error) {
       console.error('Error fetching client:', error);
       Alert.alert('Error', 'Failed to fetch client details.');
@@ -45,6 +44,10 @@ export default function ClientDetailsScreen() {
   };
 
   const handleUpdate = async () => {
+    if (!form.first_name) {
+      Alert.alert('Error', 'First name is required.');
+      return;
+    }
     try {
       await axios.put(`${API_ENDPOINTS.CLIENTS}?id=${id}`, form);
       setClient(form as Client);
@@ -76,68 +79,67 @@ export default function ClientDetailsScreen() {
     ]);
   };
 
-  if (!client) return <ThemedText>Loading...</ThemedText>;
+  if (!client) return <ThemedText style={{ color: textColor }}>Loading...</ThemedText>;
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor }]}>
-      <ThemedText type="title">{isEditing ? 'Edit Client' : 'Client Details'}</ThemedText>
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.first_name}
-        onChangeText={text => setForm({ ...form, first_name: text })}
-        placeholder="First Name"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.last_name || ''}
-        onChangeText={text => setForm({ ...form, last_name: text })}
-        placeholder="Last Name"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.email_address}
-        onChangeText={text => setForm({ ...form, email_address: text })}
-        placeholder="Email Address"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.phone_number || ''}
-        onChangeText={text => setForm({ ...form, phone_number: text })}
-        placeholder="Phone Number"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.company_name || ''}
-        onChangeText={text => setForm({ ...form, company_name: text })}
-        placeholder="Company Name"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.company_address || ''}
-        onChangeText={text => setForm({ ...form, company_address: text })}
-        placeholder="Company Address"
-        multiline
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.company_vat_number || ''}
-        onChangeText={text => setForm({ ...form, company_vat_number: text })}
-        placeholder="Company VAT Number"
-        editable={isEditing}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.company_website || ''}
-        onChangeText={text => setForm({ ...form, company_website: text })}
-        placeholder="Company Website"
-        editable={isEditing}
-      />
+    <ScrollView style={[styles.container, { backgroundColor }]}>
+      <ThemedText type="title" style={{ color: textColor }}>
+        {isEditing ? 'Edit Client' : `Client ${client.first_name} ${client.last_name || ''}`}
+      </ThemedText>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Client ID</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.client_id?.toString()}
+          editable={false}
+          placeholder="Client ID"
+          placeholderTextColor={Colors.dark.icon}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>First Name</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.first_name || ''}
+          onChangeText={text => setForm({ ...form, first_name: text })}
+          placeholder="First Name"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Last Name</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.last_name || ''}
+          onChangeText={text => setForm({ ...form, last_name: text })}
+          placeholder="Last Name"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Email</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.email || ''}
+          onChangeText={text => setForm({ ...form, email: text })}
+          placeholder="Email"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Phone</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.phone || ''}
+          onChangeText={text => setForm({ ...form, phone: text })}
+          placeholder="Phone"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
       <ThemedView style={styles.actions}>
         {isEditing ? (
           <>
@@ -171,7 +173,7 @@ export default function ClientDetailsScreen() {
           </>
         )}
       </ThemedView>
-    </ThemedView>
+    </ScrollView>
   );
 }
 
@@ -179,18 +181,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 60, // Increased top padding to avoid status bar overlap
+  },
+  fieldContainer: {
+    marginVertical: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   input: {
-    borderBottomWidth: 1,
-    padding: 8,
-    marginVertical: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
     fontSize: 16,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 16,
+    marginBottom: 16,
   },
   button: {
     padding: 12,

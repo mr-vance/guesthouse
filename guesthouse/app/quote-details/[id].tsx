@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, Platform, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import axios from 'axios';
-import DatePicker from 'react-native-date-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -54,6 +54,8 @@ export default function QuoteDetailsScreen() {
   const [showCheckInPicker, setShowCheckInPicker] = useState(false);
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
   const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const inputBackground = useThemeColor({}, 'card');
 
   useEffect(() => {
     fetchQuote();
@@ -64,8 +66,8 @@ export default function QuoteDetailsScreen() {
       const response = await axios.get(`${API_ENDPOINTS.QUOTES}?id=${id}`);
       const data = {
         ...response.data,
-        total: parseFloat(response.data.total), // Convert string to number
-        subtotal: parseFloat(response.data.subtotal || '0'), // Fallback to 0 if undefined
+        total: parseFloat(response.data.total),
+        subtotal: parseFloat(response.data.subtotal || '0'),
         vat: parseFloat(response.data.vat || '0'),
         unit_bed_cost: parseFloat(response.data.unit_bed_cost || '0'),
         unit_breakfast_cost: parseFloat(response.data.unit_breakfast_cost || '0'),
@@ -81,10 +83,10 @@ export default function QuoteDetailsScreen() {
         dinner_dates: JSON.parse(response.data.dinner_dates || '[]'),
         laundry_dates: JSON.parse(response.data.laundry_dates || '[]'),
       };
-      console.log('Fetched quote:', data); // Log for debugging
+      console.log('Fetched quote:', data);
       setQuote(data);
       setForm(data);
-      calculateTotals(data); // Calculate totals immediately after loading
+      calculateTotals(data);
     } catch (error) {
       console.error('Error fetching quote:', error);
       Alert.alert('Error', 'Failed to fetch quote details.');
@@ -179,171 +181,232 @@ export default function QuoteDetailsScreen() {
     ]);
   };
 
-  if (!quote) return <ThemedText>Loading...</ThemedText>;
+  if (!quote) return <ThemedText style={{ color: textColor }}>Loading...</ThemedText>;
 
   return (
     <ScrollView style={[styles.container, { backgroundColor }]}>
-      <ThemedText type="title">{isEditing ? 'Edit Quote' : `Quote ${quote.quote_number}`}</ThemedText>
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.client_id?.toString()}
-        onChangeText={text => setForm({ ...form, client_id: parseInt(text) })}
-        placeholder="Client ID"
-        editable={isEditing}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.number_of_beds?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, number_of_beds: parseInt(text) });
-          calculateTotals({ ...form, number_of_beds: parseInt(text) });
-        }}
-        placeholder="Number of Beds"
-        editable={isEditing}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.number_of_guests?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, number_of_guests: parseInt(text) });
-          calculateTotals({ ...form, number_of_guests: parseInt(text) });
-        }}
-        placeholder="Number of Guests"
-        editable={isEditing}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.unit_bed_cost?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, unit_bed_cost: parseFloat(text) });
-          calculateTotals({ ...form, unit_bed_cost: parseFloat(text) });
-        }}
-        placeholder="Unit Bed Cost (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TouchableOpacity
-        style={styles.datePickerButton}
-        onPress={() => isEditing && setShowCheckInPicker(true)}
-      >
-        <ThemedText>Check-in Date: {form.check_in_date}</ThemedText>
-      </TouchableOpacity>
-      <DatePicker
-        modal
-        open={showCheckInPicker}
-        date={form.check_in_date ? new Date(form.check_in_date) : new Date()}
-        onConfirm={date => {
-          setShowCheckInPicker(false);
-          const newForm = { ...form, check_in_date: date.toISOString().split('T')[0] };
-          setForm(newForm);
-          calculateTotals(newForm);
-        }}
-        onCancel={() => setShowCheckInPicker(false)}
-      />
-      <TouchableOpacity
-        style={styles.datePickerButton}
-        onPress={() => isEditing && setShowCheckOutPicker(true)}
-      >
-        <ThemedText>Check-out Date: {form.check_out_date}</ThemedText>
-      </TouchableOpacity>
-      <DatePicker
-        modal
-        open={showCheckOutPicker}
-        date={form.check_out_date ? new Date(form.check_out_date) : new Date()}
-        onConfirm={date => {
-          setShowCheckOutPicker(false);
-          const newForm = { ...form, check_out_date: date.toISOString().split('T')[0] };
-          setForm(newForm);
-          calculateTotals(newForm);
-        }}
-        onCancel={() => setShowCheckOutPicker(false)}
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.unit_breakfast_cost?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, unit_breakfast_cost: parseFloat(text) });
-          calculateTotals({ ...form, unit_breakfast_cost: parseFloat(text) });
-        }}
-        placeholder="Unit Breakfast Cost (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.unit_lunch_cost?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, unit_lunch_cost: parseFloat(text) });
-          calculateTotals({ ...form, unit_lunch_cost: parseFloat(text) });
-        }}
-        placeholder="Unit Lunch Cost (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.unit_dinner_cost?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, unit_dinner_cost: parseFloat(text) });
-          calculateTotals({ ...form, unit_dinner_cost: parseFloat(text) });
-        }}
-        placeholder="Unit Dinner Cost (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.unit_laundry_cost?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, unit_laundry_cost: parseFloat(text) });
-          calculateTotals({ ...form, unit_laundry_cost: parseFloat(text) });
-        }}
-        placeholder="Unit Laundry Cost (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.guest_details || ''}
-        onChangeText={text => setForm({ ...form, guest_details: text })}
-        placeholder="Guest Details"
-        editable={isEditing}
-        multiline
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.discount_percentage?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
-          calculateTotals({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
-        }}
-        placeholder="Discount Percentage"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <TextInput
-        style={[styles.input, { borderColor: Colors.light.icon }]}
-        value={form.discount_amount?.toString()}
-        onChangeText={text => {
-          setForm({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
-          calculateTotals({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
-        }}
-        placeholder="Discount Amount (ZAR)"
-        editable={isEditing}
-        keyboardType="decimal-pad"
-      />
-      <ThemedText type="subtitle">
-        Subtotal: {typeof form.subtotal === 'number' ? `R${form.subtotal.toFixed(2)}` : 'Calculating...'}
+      <ThemedText type="title" style={{ color: textColor }}>
+        {isEditing ? 'Edit Quote' : `Quote ${quote.quote_number}`}
       </ThemedText>
-      <ThemedText type="subtitle">
-        VAT (15%): {typeof form.vat === 'number' ? `R${form.vat.toFixed(2)}` : 'Calculating...'}
-      </ThemedText>
-      <ThemedText type="subtitle">
-        Total: {typeof form.total === 'number' ? `R${form.total.toFixed(2)}` : 'Calculating...'}
-      </ThemedText>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Client ID</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.client_id?.toString()}
+          onChangeText={text => setForm({ ...form, client_id: parseInt(text) })}
+          placeholder="Client ID"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Number of Beds</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.number_of_beds?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, number_of_beds: parseInt(text) });
+            calculateTotals({ ...form, number_of_beds: parseInt(text) });
+          }}
+          placeholder="Number of Beds"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Number of Guests</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.number_of_guests?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, number_of_guests: parseInt(text) });
+            calculateTotals({ ...form, number_of_guests: parseInt(text) });
+          }}
+          placeholder="Number of Guests"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Unit Bed Cost (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.unit_bed_cost?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, unit_bed_cost: parseFloat(text) });
+            calculateTotals({ ...form, unit_bed_cost: parseFloat(text) });
+          }}
+          placeholder="Unit Bed Cost (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Check-in Date</ThemedText>
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={() => isEditing && setShowCheckInPicker(true)}
+        >
+          <ThemedText style={{ color: textColor }}>
+            {form.check_in_date || 'Select'}
+          </ThemedText>
+        </TouchableOpacity>
+        {showCheckInPicker && (
+          <DateTimePicker
+            value={form.check_in_date ? new Date(form.check_in_date) : new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={(event, date) => {
+              setShowCheckInPicker(Platform.OS === 'ios');
+              if (date) {
+                const newForm = { ...form, check_in_date: date.toISOString().split('T')[0] };
+                setForm(newForm);
+                calculateTotals(newForm);
+              }
+            }}
+          />
+        )}
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Check-out Date</ThemedText>
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={() => isEditing && setShowCheckOutPicker(true)}
+        >
+          <ThemedText style={{ color: textColor }}>
+            {form.check_out_date || 'Select'}
+          </ThemedText>
+        </TouchableOpacity>
+        {showCheckOutPicker && (
+          <DateTimePicker
+            value={form.check_out_date ? new Date(form.check_out_date) : new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={(event, date) => {
+              setShowCheckOutPicker(Platform.OS === 'ios');
+              if (date) {
+                const newForm = { ...form, check_out_date: date.toISOString().split('T')[0] };
+                setForm(newForm);
+                calculateTotals(newForm);
+              }
+            }}
+          />
+        )}
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Unit Breakfast Cost (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.unit_breakfast_cost?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, unit_breakfast_cost: parseFloat(text) });
+            calculateTotals({ ...form, unit_breakfast_cost: parseFloat(text) });
+          }}
+          placeholder="Unit Breakfast Cost (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Unit Lunch Cost (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.unit_lunch_cost?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, unit_lunch_cost: parseFloat(text) });
+            calculateTotals({ ...form, unit_lunch_cost: parseFloat(text) });
+          }}
+          placeholder="Unit Lunch Cost (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Unit Dinner Cost (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.unit_dinner_cost?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, unit_dinner_cost: parseFloat(text) });
+            calculateTotals({ ...form, unit_dinner_cost: parseFloat(text) });
+          }}
+          placeholder="Unit Dinner Cost (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Unit Laundry Cost (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.unit_laundry_cost?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, unit_laundry_cost: parseFloat(text) });
+            calculateTotals({ ...form, unit_laundry_cost: parseFloat(text) });
+          }}
+          placeholder="Unit Laundry Cost (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Guest Details</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.guest_details || ''}
+          onChangeText={text => setForm({ ...form, guest_details: text })}
+          placeholder="Guest Details"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+          multiline
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Discount Percentage</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.discount_percentage?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
+            calculateTotals({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
+          }}
+          placeholder="Discount Percentage"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Discount Amount (ZAR)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
+          value={form.discount_amount?.toString()}
+          onChangeText={text => {
+            setForm({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
+            calculateTotals({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
+          }}
+          placeholder="Discount Amount (ZAR)"
+          placeholderTextColor={Colors.dark.icon}
+          editable={isEditing}
+        />
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Subtotal</ThemedText>
+        <ThemedText style={{ color: textColor }}>
+          {typeof form.subtotal === 'number' ? `R${form.subtotal.toFixed(2)}` : '0.00'}
+        </ThemedText>
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>VAT (15%)</ThemedText>
+        <ThemedText style={{ color: textColor }}>
+          {typeof form.vat === 'number' ? `R${form.vat.toFixed(2)}` : '0.00'}
+        </ThemedText>
+      </View>
+      <View style={styles.fieldContainer}>
+        <ThemedText style={[styles.label, { color: textColor }]}>Total</ThemedText>
+        <ThemedText style={{ color: textColor }}>
+          {typeof form.total === 'number' ? `R${form.total.toFixed(2)}` : '0.00'}
+        </ThemedText>
+      </View>
       <ThemedView style={styles.actions}>
         {isEditing ? (
           <>
@@ -393,17 +456,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 60, // Increased top padding to avoid status bar overlap
+  },
+  fieldContainer: {
+    marginVertical: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   input: {
-    borderBottomWidth: 1,
-    padding: 8,
-    marginVertical: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
     fontSize: 16,
   },
   datePickerButton: {
-    padding: 8,
-    marginVertical: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: Colors.light.icon,
   },
   actions: {
     flexDirection: 'row',
