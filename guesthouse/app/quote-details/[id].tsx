@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, Platform, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -40,6 +40,7 @@ interface Quote {
 export default function QuoteDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<Quote>>({
@@ -58,26 +59,31 @@ export default function QuoteDetailsScreen() {
   const inputBackground = useThemeColor({}, 'card');
 
   useEffect(() => {
+    navigation.setOptions({
+      title: isEditing ? 'Edit Quote' : 'Quote Details',
+      headerBackTitle: '',
+      headerBackTitleVisible: false,
+    });
     fetchQuote();
-  }, []);
+  }, [navigation, isEditing]);
 
   const fetchQuote = async () => {
     try {
       const response = await axios.get(`${API_ENDPOINTS.QUOTES}?id=${id}`);
       const data = {
         ...response.data,
-        total: parseFloat(response.data.total),
-        subtotal: parseFloat(response.data.subtotal || '0'),
-        vat: parseFloat(response.data.vat || '0'),
-        unit_bed_cost: parseFloat(response.data.unit_bed_cost || '0'),
-        unit_breakfast_cost: parseFloat(response.data.unit_breakfast_cost || '0'),
-        unit_lunch_cost: parseFloat(response.data.unit_lunch_cost || '0'),
-        unit_dinner_cost: parseFloat(response.data.unit_dinner_cost || '0'),
-        unit_laundry_cost: parseFloat(response.data.unit_laundry_cost || '0'),
-        number_of_beds: parseInt(response.data.number_of_beds || '0', 10),
-        number_of_guests: parseInt(response.data.number_of_guests || '0', 10),
-        discount_percentage: parseFloat(response.data.discount_percentage || '0'),
-        discount_amount: parseFloat(response.data.discount_amount || '0'),
+        total: parseFloat(response.data.total) || 0,
+        subtotal: parseFloat(response.data.subtotal || '0') || 0,
+        vat: parseFloat(response.data.vat || '0') || 0,
+        unit_bed_cost: parseFloat(response.data.unit_bed_cost || '0') || 0,
+        unit_breakfast_cost: parseFloat(response.data.unit_breakfast_cost || '0') || 0,
+        unit_lunch_cost: parseFloat(response.data.unit_lunch_cost || '0') || 0,
+        unit_dinner_cost: parseFloat(response.data.unit_dinner_cost || '0') || 0,
+        unit_laundry_cost: parseFloat(response.data.unit_laundry_cost || '0') || 0,
+        number_of_beds: parseInt(response.data.number_of_beds || '0', 10) || 0,
+        number_of_guests: parseInt(response.data.number_of_guests || '0', 10) || 0,
+        discount_percentage: parseFloat(response.data.discount_percentage || '0') || 0,
+        discount_amount: parseFloat(response.data.discount_amount || '0') || 0,
         breakfast_dates: JSON.parse(response.data.breakfast_dates || '[]'),
         lunch_dates: JSON.parse(response.data.lunch_dates || '[]'),
         dinner_dates: JSON.parse(response.data.dinner_dates || '[]'),
@@ -185,18 +191,16 @@ export default function QuoteDetailsScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor }]}>
-      <ThemedText type="title" style={{ color: textColor }}>
-        {isEditing ? 'Edit Quote' : `Quote ${quote.quote_number}`}
-      </ThemedText>
       <View style={styles.fieldContainer}>
         <ThemedText style={[styles.label, { color: textColor }]}>Client ID</ThemedText>
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.client_id?.toString()}
-          onChangeText={text => setForm({ ...form, client_id: parseInt(text) })}
+          onChangeText={(text) => setForm({ ...form, client_id: parseInt(text) })}
           placeholder="Client ID"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -204,13 +208,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.number_of_beds?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, number_of_beds: parseInt(text) });
-            calculateTotals({ ...form, number_of_beds: parseInt(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, number_of_beds: parseInt(text) || 0 });
+            calculateTotals({ ...form, number_of_beds: parseInt(text) || 0 });
           }}
           placeholder="Number of Beds"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -218,13 +223,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.number_of_guests?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, number_of_guests: parseInt(text) });
-            calculateTotals({ ...form, number_of_guests: parseInt(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, number_of_guests: parseInt(text) || 0 });
+            calculateTotals({ ...form, number_of_guests: parseInt(text) || 0 });
           }}
           placeholder="Number of Guests"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -232,13 +238,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.unit_bed_cost?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, unit_bed_cost: parseFloat(text) });
-            calculateTotals({ ...form, unit_bed_cost: parseFloat(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, unit_bed_cost: parseFloat(text) || 0 });
+            calculateTotals({ ...form, unit_bed_cost: parseFloat(text) || 0 });
           }}
           placeholder="Unit Bed Cost (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -282,6 +289,7 @@ export default function QuoteDetailsScreen() {
             value={form.check_out_date ? new Date(form.check_out_date) : new Date()}
             mode="date"
             display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            minimumDate={form.check_in_date ? new Date(form.check_in_date) : undefined}
             onChange={(event, date) => {
               setShowCheckOutPicker(Platform.OS === 'ios');
               if (date) {
@@ -298,13 +306,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.unit_breakfast_cost?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, unit_breakfast_cost: parseFloat(text) });
-            calculateTotals({ ...form, unit_breakfast_cost: parseFloat(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, unit_breakfast_cost: parseFloat(text) || 0 });
+            calculateTotals({ ...form, unit_breakfast_cost: parseFloat(text) || 0 });
           }}
           placeholder="Unit Breakfast Cost (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -312,13 +321,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.unit_lunch_cost?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, unit_lunch_cost: parseFloat(text) });
-            calculateTotals({ ...form, unit_lunch_cost: parseFloat(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, unit_lunch_cost: parseFloat(text) || 0 });
+            calculateTotals({ ...form, unit_lunch_cost: parseFloat(text) || 0 });
           }}
           placeholder="Unit Lunch Cost (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -326,13 +336,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.unit_dinner_cost?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, unit_dinner_cost: parseFloat(text) });
-            calculateTotals({ ...form, unit_dinner_cost: parseFloat(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, unit_dinner_cost: parseFloat(text) || 0 });
+            calculateTotals({ ...form, unit_dinner_cost: parseFloat(text) || 0 });
           }}
           placeholder="Unit Dinner Cost (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -340,13 +351,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.unit_laundry_cost?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, unit_laundry_cost: parseFloat(text) });
-            calculateTotals({ ...form, unit_laundry_cost: parseFloat(text) });
+          onChangeText={(text) => {
+            setForm({ ...form, unit_laundry_cost: parseFloat(text) || 0 });
+            calculateTotals({ ...form, unit_laundry_cost: parseFloat(text) || 0 });
           }}
           placeholder="Unit Laundry Cost (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -354,7 +366,7 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.guest_details || ''}
-          onChangeText={text => setForm({ ...form, guest_details: text })}
+          onChangeText={(text) => setForm({ ...form, guest_details: text })}
           placeholder="Guest Details"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
@@ -366,13 +378,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.discount_percentage?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
-            calculateTotals({ ...form, discount_percentage: parseFloat(text), discount_amount: 0 });
+          onChangeText={(text) => {
+            setForm({ ...form, discount_percentage: parseFloat(text) || 0, discount_amount: 0 });
+            calculateTotals({ ...form, discount_percentage: parseFloat(text) || 0, discount_amount: 0 });
           }}
           placeholder="Discount Percentage"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -380,13 +393,14 @@ export default function QuoteDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.discount_amount?.toString()}
-          onChangeText={text => {
-            setForm({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
-            calculateTotals({ ...form, discount_amount: parseFloat(text), discount_percentage: 0 });
+          onChangeText={(text) => {
+            setForm({ ...form, discount_amount: parseFloat(text) || 0, discount_percentage: 0 });
+            calculateTotals({ ...form, discount_amount: parseFloat(text) || 0, discount_percentage: 0 });
           }}
           placeholder="Discount Amount (ZAR)"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
+          keyboardType="numeric"
         />
       </View>
       <View style={styles.fieldContainer}>
@@ -456,7 +470,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 60, // Increased top padding to avoid status bar overlap
+    paddingTop: 60,
   },
   fieldContainer: {
     marginVertical: 8,

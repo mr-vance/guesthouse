@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -13,10 +13,10 @@ interface Quote {
   quote_id: number;
   quote_number: string;
   first_name: string;
-  last_name: string;
+  last_name: string | null;
   number_of_guests: number;
   total: string;
-  invoice_status: 'invoiced' | 'unpaid';
+  invoice_status: 'unpaid' | 'invoiced';
   last_modified: string;
 }
 
@@ -24,11 +24,7 @@ export default function QuotesScreen() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const backgroundColor = useThemeColor({}, 'background');
 
-  useEffect(() => {
-    fetchQuotes();
-  }, []);
-
-  const fetchQuotes = async () => {
+  const fetchQuotes = useCallback(async () => {
     try {
       const response = await axios.get(API_ENDPOINTS.QUOTES);
       console.log('Quotes API response:', response.data);
@@ -37,27 +33,33 @@ export default function QuotesScreen() {
       console.error('Error fetching quotes:', error);
       setQuotes([]);
     }
-  };
+  }, []);
 
-  const renderQuote = ({ item }: { item: Quote }) => {
-    const total = parseFloat(item.total) || 0;
-    return (
-      <Link href={`/quote-details/${item.quote_id}`} asChild>
-        <TouchableOpacity style={styles.quoteItem}>
-          <ThemedText type="defaultSemiBold">
-            Quote #{item.quote_number} - {item.first_name} {item.last_name}
-          </ThemedText>
-          <ThemedText>Guests: {item.number_of_guests}</ThemedText>
-          <ThemedText>Total: R{total.toFixed(2)}</ThemedText>
-          <ThemedText>Status: {item.invoice_status}</ThemedText>
-        </TouchableOpacity>
-      </Link>
-    );
-  };
+  useEffect(() => {
+    fetchQuotes();
+  }, [fetchQuotes]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchQuotes();
+    }, [fetchQuotes])
+  );
+
+  const renderQuote = ({ item }: { item: Quote }) => (
+    <Link href={`/quote-details/${item.quote_id}`} asChild>
+      <TouchableOpacity style={styles.quoteItem}>
+        <ThemedText type="defaultSemiBold">
+          Quote #{item.quote_number} - {item.first_name} {item.last_name || ''}
+        </ThemedText>
+        <ThemedText>Guests: {item.number_of_guests}</ThemedText>
+        <ThemedText>Total: R{item.total}</ThemedText>
+        <ThemedText>Status: {item.invoice_status}</ThemedText>
+      </TouchableOpacity>
+    </Link>
+  );
 
   return (
     <ThemedView style={[styles.container, { backgroundColor }]}>
-      <ThemedText type="title">Quotes</ThemedText>
       <Link href="/create-quote" asChild>
         <TouchableOpacity style={styles.addButton}>
           <ThemedText type="defaultSemiBold" style={styles.buttonText}>Add Quote</ThemedText>
@@ -66,7 +68,7 @@ export default function QuotesScreen() {
       <FlatList
         data={quotes}
         renderItem={renderQuote}
-        keyExtractor={item => item.quote_id.toString()}
+        keyExtractor={(item) => item.quote_id.toString()}
         ListEmptyComponent={<ThemedText>No quotes found.</ThemedText>}
       />
     </ThemedView>
@@ -77,7 +79,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 60, // Increased to avoid status bar overlap
+    paddingTop: 60,
   },
   quoteItem: {
     padding: 16,

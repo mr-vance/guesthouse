@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import axios from 'axios';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -20,6 +20,7 @@ interface Client {
 export default function ClientDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
   const [client, setClient] = useState<Client | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Partial<Client>>({});
@@ -28,12 +29,18 @@ export default function ClientDetailsScreen() {
   const inputBackground = useThemeColor({}, 'card');
 
   useEffect(() => {
+    navigation.setOptions({
+      title: isEditing ? 'Edit Client' : 'Client Details',
+      headerBackTitle: '',
+      headerBackTitleVisible: false,
+    });
     fetchClient();
-  }, []);
+  }, [navigation, isEditing]);
 
   const fetchClient = async () => {
     try {
       const response = await axios.get(`${API_ENDPOINTS.CLIENTS}?id=${id}`);
+      console.log('Client details API response:', response.data);
       const data = response.data;
       setClient(data);
       setForm(data);
@@ -83,25 +90,12 @@ export default function ClientDetailsScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor }]}>
-      <ThemedText type="title" style={{ color: textColor }}>
-        {isEditing ? 'Edit Client' : `Client ${client.first_name} ${client.last_name || ''}`}
-      </ThemedText>
-      <View style={styles.fieldContainer}>
-        <ThemedText style={[styles.label, { color: textColor }]}>Client ID</ThemedText>
-        <TextInput
-          style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
-          value={form.client_id?.toString()}
-          editable={false}
-          placeholder="Client ID"
-          placeholderTextColor={Colors.dark.icon}
-        />
-      </View>
       <View style={styles.fieldContainer}>
         <ThemedText style={[styles.label, { color: textColor }]}>First Name</ThemedText>
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.first_name || ''}
-          onChangeText={text => setForm({ ...form, first_name: text })}
+          onChangeText={(text) => setForm({ ...form, first_name: text })}
           placeholder="First Name"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
@@ -112,7 +106,7 @@ export default function ClientDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.last_name || ''}
-          onChangeText={text => setForm({ ...form, last_name: text })}
+          onChangeText={(text) => setForm({ ...form, last_name: text })}
           placeholder="Last Name"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
@@ -123,7 +117,7 @@ export default function ClientDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.email || ''}
-          onChangeText={text => setForm({ ...form, email: text })}
+          onChangeText={(text) => setForm({ ...form, email: text })}
           placeholder="Email"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
@@ -134,7 +128,7 @@ export default function ClientDetailsScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: inputBackground, color: textColor, borderColor: textColor }]}
           value={form.phone || ''}
-          onChangeText={text => setForm({ ...form, phone: text })}
+          onChangeText={(text) => setForm({ ...form, phone: text })}
           placeholder="Phone"
           placeholderTextColor={Colors.dark.icon}
           editable={isEditing}
@@ -181,7 +175,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 60, // Increased top padding to avoid status bar overlap
+    paddingTop: 60,
   },
   fieldContainer: {
     marginVertical: 8,
