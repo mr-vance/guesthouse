@@ -13,7 +13,7 @@ interface Client {
   client_id: number;
   first_name: string;
   last_name: string | null;
-  email: string | null;
+  email_address: string;
 }
 
 export default function ClientsScreen() {
@@ -28,9 +28,11 @@ export default function ClientsScreen() {
     try {
       const response = await axios.get(API_ENDPOINTS.CLIENTS);
       console.log('Clients API response:', response.data);
-      const fetchedClients = response.data.map((client: Client) => ({
-        ...client,
-        email: client.email || '', // Ensure email is string, not null
+      const fetchedClients = response.data.map((client: any) => ({
+        client_id: client.client_id,
+        first_name: client.first_name,
+        last_name: client.last_name || null,
+        email_address: client.email_address || '',
       }));
       setClients(fetchedClients);
       setFilteredClients(fetchedClients);
@@ -68,7 +70,7 @@ export default function ClientsScreen() {
         <ThemedText type="defaultSemiBold">
           {item.first_name} {item.last_name || ''}
         </ThemedText>
-        <ThemedText>{item.email && item.email.trim() !== '' ? item.email : 'No email'}</ThemedText>
+        <ThemedText>{item.email_address}</ThemedText>
       </TouchableOpacity>
     </Link>
   );
